@@ -15,21 +15,25 @@ $$y = W \times x + x$$
 
 ### 3. 通过高等数学来理解反向传播
 主包在考研时期学习到高等数学的求偏导时突然就联想到了反向传播，我们知道在模型反向传播的过程中要通过 输出($y$) 来求 输入($x$) 的偏导得到梯度的方向(严格来说，训练时真正反向传播的是损失函数 $L$ 对各层变量和参数的梯度。本文为了突出残差连接对梯度通路的影响，先只观察 $\frac{\partial y}{\partial x}$ 这一部分。)，然后再通过梯度下降法来迭代优化，求偏导的过程如下(按理说这里只有单输入，不该用偏导符号，但是为了符号的统一方便这里就还是用偏导符号说明)：
-$$y对x的偏导 = \frac{\partial y}{\partial x} = W$$ 
+
+$$y对x的偏导 = \frac{\partial y}{\partial x} = W$$
+
 这里的 $x$ 可能是上一层模型的输出，它的前方可能经过了很多层的线性映射，所以我们通过高数中的链式法则对 $y$ 求更前面的层的梯度时会是这样(其中 $x_n$ 代表 $x$ 前面 $n$ 层的输入)：
-$$ y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n}$$ 
+
+$$y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n}$$ 
+
 因为其中会连乘许多 $\frac{\partial x_t}{\partial x_{t+1}}$ (其中 $x_t$ 代表 $x$ 往前的第 $t$ 层的输入)，如果 $\frac{\partial x_t}{\partial x_{t+1}}$ 是一些非常小接近于零的数字(甚至当其小到一定程度，计算机精度无法表示时那就会被表示为零)，最后的连乘结果就会接近于零，计算机无法正常表示那就是零，那么偏导就是零，梯度也就是零，这时候模型就不知道该往哪个方向优化了，这种现象就是梯度消失；反之，如果 $\frac{\partial x_t}{\partial x_{t+1}}$ 是一些非常大的数字，那么在连乘过后结果会更大，如果超出了计算机的表示范围，计算机无法正常表示时，模型的更新会变得极不稳定，甚至无法正常优化，这种现象叫做梯度爆炸。
 
 ### 4. 通过高等数学到反向传播再到残差连接
 在了解了梯度消失和梯度爆炸之后，我们再来看残差连接，我们假设 $x$ 对 $x_n$ 的偏导可以正常计算得到正常数值，没有出现梯度消失或者梯度爆炸的情况：
-$$ x 对 x_n 的偏导 = \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} (我很正常!)$$
+$$x 对 x_n 的偏导 = \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} (我很正常!)$$
 再假设 $y$ 对 $x$ 的偏导为零(也就是 $W$ 为零)，此时出现了问题，出现了梯度消失，那么 $y$ 对 $x_n$ 的偏导由链式法则得到的也是零：
-$$ y 对 x 的偏导 = \frac{\partial y}{\partial x} = W = 0 (出事了孩子们)$$
-$$ y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} = 0 (朕被刁民害了)$$
+$$y 对 x 的偏导 = \frac{\partial y}{\partial x} = W = 0 (出事了孩子们)$$
+$$y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} = 0 (朕被刁民害了)$$
 此时模型不知道优化方向了。
 这时，我们引入残差连接，原式变为：$y = W \times x + x$ ，此时 $y$ 对 $x_n$ 的偏导变为：
-$$ y 对 x 的偏导 = \frac{\partial y}{\partial x} = W + 1 = 1 (我又行了孩子们)$$
-$$ y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} = \frac{\partial x}{\partial x_n} ≠ 0 (无伤大雅)$$
+$$y 对 x 的偏导 = \frac{\partial y}{\partial x} = W + 1 = 1 (我又行了孩子们)$$
+$$y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} = \frac{\partial x}{\partial x_n} ≠ 0 (无伤大雅)$$
 此时模型又可以正常通过梯度下降法进行迭代优化了。
 简单的意会来讲就是 $y = W \times x$ 反向传播的路被堵死了，这时候我们把这一层的输入也就是上一层的输出( $x$ )加入进来，给了模型另一条路可以直接通过这个加入的 $x$ 回到之前的路再重新走。
 
