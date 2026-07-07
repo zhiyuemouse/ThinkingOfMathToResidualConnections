@@ -2,10 +2,14 @@
 
 ### 1. 残差连接
 残差连接诞生于一个看似矛盾的问题：神经网络明明应该越深越强，但普通网络加深后却可能连训练集都学不好。何恺明团队在 2015 年提出 ResNet，把“直接学习目标映射”改成“学习输入与目标之间的差值”。也就是说，网络不再每一层都推翻重来，而是在原有表示上学习一个修正量。这个小小的结构变化，让上百层神经网络真正变得可训练，也成为后来 Transformer 和大模型架构中不可或缺的基础思想。
-我们用最简单的数学公式表达就是将 
+我们用最简单的数学公式表达就是将
+
 $$y = W \times x$$ 
+
 变为了 
+
 $$y = W \times x + x$$ 
+
 也就是在模型的输出中加入模型的输入(真实 ResNet 中， $F(x)$ 往往不是单个线性映射，而是由卷积、归一化、激活函数等组成的一个小网络。这里为了方便理解，把它简化成 $W \times x$。并忽略了偏置项只用最简单的线性映射来说明)
 
 ### 2. 残差连接的作用
@@ -26,14 +30,22 @@ $$y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial
 
 ### 4. 通过高等数学到反向传播再到残差连接
 在了解了梯度消失和梯度爆炸之后，我们再来看残差连接，我们假设 $x$ 对 $x_n$ 的偏导可以正常计算得到正常数值，没有出现梯度消失或者梯度爆炸的情况：
+
 $$x 对 x_n 的偏导 = \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} (我很正常!)$$
+
 再假设 $y$ 对 $x$ 的偏导为零(也就是 $W$ 为零)，此时出现了问题，出现了梯度消失，那么 $y$ 对 $x_n$ 的偏导由链式法则得到的也是零：
+
 $$y 对 x 的偏导 = \frac{\partial y}{\partial x} = W = 0 (出事了孩子们)$$
+
 $$y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} = 0 (朕被刁民害了)$$
+
 此时模型不知道优化方向了。
-这时，我们引入残差连接，原式变为：$y = W \times x + x$ ，此时 $y$ 对 $x_n$ 的偏导变为：
+这时，我们引入残差连接，原式变为： $y = W \times x + x$ ，此时 $y$ 对 $x_n$ 的偏导变为：
+
 $$y 对 x 的偏导 = \frac{\partial y}{\partial x} = W + 1 = 1 (我又行了孩子们)$$
+
 $$y 对 x_n 的偏导 = \frac{\partial y}{\partial x} \frac{\partial x}{\partial x_1} \frac{\partial x_1}{\partial x_2} ...... \frac{\partial x_{n-1}}{\partial x_n} = \frac{\partial x}{\partial x_n} ≠ 0 (无伤大雅)$$
+
 此时模型又可以正常通过梯度下降法进行迭代优化了。
 简单的意会来讲就是 $y = W \times x$ 反向传播的路被堵死了，这时候我们把这一层的输入也就是上一层的输出( $x$ )加入进来，给了模型另一条路可以直接通过这个加入的 $x$ 回到之前的路再重新走。
 
